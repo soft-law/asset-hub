@@ -47,14 +47,17 @@ type Contract = {
 };
 
 (async () => {
-  for (const file of contracts) {
-    const name = path.basename(file, ".json");
-    const contract = JSON.parse(
-      readFileSync(path.join(contractsOutDir, file), "utf8")
+  const contractName = "Softlaw";
+  const contract = contracts.find((file) => file.startsWith(contractName));
+
+  if (contract) {
+    const name = path.basename(contract, ".json");
+    const contractData = JSON.parse(
+      readFileSync(path.join(contractsOutDir, contract), "utf8")
     ) as Contract;
     const factory = new ethers.ContractFactory(
-      contract.abi,
-      contract.bytecode,
+      contractData.abi,
+      contractData.bytecode,
       wallet
     );
 
@@ -68,10 +71,12 @@ type Contract = {
     const fileContent = JSON.stringify({
       name,
       address,
-      abi: contract.abi,
+      abi: contractData.abi,
       deployedAt: Date.now(),
     });
     writeFileSync(path.join(deploysDir, `${address}.json`), fileContent);
+  } else {
+    console.log(`Contract ${contractName} not found.`);
   }
 })().catch((err) => {
   console.error(err);

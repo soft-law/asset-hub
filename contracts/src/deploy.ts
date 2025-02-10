@@ -47,7 +47,46 @@ type Contract = {
 };
 
 (async () => {
-  const contractName = "Softlaw";
+  // Deploy Softlaw Copyrights first
+
+  const copyrights = "SoftlawCopyrights";
+  const copyrightsContract = contracts.find((file) =>
+    file.startsWith(copyrights)
+  );
+
+  let copyrightsAddress;
+
+  if (copyrightsContract) {
+    const name = path.basename(copyrightsContract, ".json");
+    const contractData = JSON.parse(
+      readFileSync(path.join(contractsOutDir, copyrightsContract), "utf8")
+    ) as Contract;
+    const factory = new ethers.ContractFactory(
+      contractData.abi,
+      contractData.bytecode,
+      wallet
+    );
+
+    console.log(`Deploying contract ${name}...`);
+    const deployedContract = await factory.deploy();
+    await deployedContract.waitForDeployment();
+    const address = await deployedContract.getAddress();
+    copyrightsAddress = address;
+
+    console.log(`Deployed contract ${name}: ${address}`);
+
+    const fileContent = JSON.stringify({
+      name,
+      address,
+      abi: contractData.abi,
+      deployedAt: Date.now(),
+    });
+    writeFileSync(path.join(deploysDir, `${address}.json`), fileContent);
+  } else {
+    console.log(`Contract ${copyrights} not found.`);
+  }
+
+  const contractName = "SoftlawLicenses";
   const contract = contracts.find((file) => file.startsWith(contractName));
 
   if (contract) {
@@ -62,7 +101,7 @@ type Contract = {
     );
 
     console.log(`Deploying contract ${name}...`);
-    const deployedContract = await factory.deploy();
+    const deployedContract = await factory.deploy(copyrightsAddress);
     await deployedContract.waitForDeployment();
     const address = await deployedContract.getAddress();
 
